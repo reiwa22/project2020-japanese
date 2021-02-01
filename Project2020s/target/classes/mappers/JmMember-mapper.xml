@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="mappers.member-mapper">
+	<!-- ログイン -->
+	<select id ="selectMemberUserIdPw" resultType="JmMemberVo">
+		select * from tbl_user
+		where u_id = #{u_id} and u_pw =#{u_pw}
+	</select>
+	
+	<!-- 等級セッションを取得 -->
+	<select id="selectGrade" resultType="string">
+		select u_grade from tbl_user
+		where u_id =#{u_id}
+	</select>
+	
+	<!-- 新規会員登録 -->
+	<insert id="insertMember">
+		insert into tbl_user(u_info,u_id,u_pw,u_name,u_gender,u_email,u_address,u_phone)
+		values (seq_user_count.nextval,#{u_id},#{u_pw},#{u_name},#{u_gender},#{u_email},#{u_address},
+				 #{u_phone})
+	</insert>
+	
+	<!-- 管理者ページ 会員目録 -->
+	<select id="selectList" resultType="JmMemberVo">
+		select * from tbl_user order by u_info
+	</select>
+
+	<!-- 管理者ページ 会員情報の個人別照会 -->
+	<select id="selectById" resultType="JmMemberVo">
+		select * from tbl_user
+		where u_id=#{u_id}
+	</select>
+	
+	<!-- 管理者ページ 会員情報修正 -->
+	<update id="updateUser">
+		update tbl_user set
+		u_name= #{u_name},
+		u_gender= #{u_gender},
+		u_email= #{u_email},
+		u_address= #{u_address},
+		u_phone= #{u_phone},
+		u_grade= #{u_grade}
+		where u_id= #{u_id}
+	</update>
+	
+	<!-- 管理者ページ 会員情報削除 -->
+	<delete id="deleteUser">
+		delete from tbl_user
+		where u_id=#{u_id}
+	</delete>
+	
+	<!-- 管理者Q&A掲示板にコメントを書き込む -->
+	<insert id="contactManagerInsert">
+		insert into tbl_contact(c_info,c_id,c_subject,c_contents,c_originnum,c_groupold,c_time)
+		values (seq_contact.nextval, #{c_id},#{c_subject},#{c_contents},#{c_originnum},(select max(c_groupold)
+				 from tbl_contact)+1,sysdate)
+	</insert>
+	
+	<!-- 管理者Q&A掲示板削除機能 -->
+	<delete id="deleteContact">
+		delete from tbl_contact
+		where c_info = #{c_info}
+	</delete>
+	
+	<!-- 管理者 c_originnum 探し -->
+	<select id="selectOriginalNum" resultType="int">
+		select c_originnum from tbl_contact
+		where c_info = #{c_info}
+	</select>
+	
+	 <!-- パスワード検索(メール検索) -->
+	 <select id="selectPw" resultType="JmPwEmailDto">
+		select u_email,u_pw from tbl_user
+		where u_id = #{u_id}
+	</select>  
+	
+	<!-- ID重複チェック -->
+	<select id="selectId" resultType="string">
+		select u_id from tbl_user
+		where u_id = #{u_id}
+	</select>
+	
+	<!-- 検索 -->
+	<sql id="searchUser">
+		<if test="searchType !=null">
+			<choose>
+				<when test='searchType =="u_id"'>
+					where u_id like '%'||#{keyword}||'%'
+				</when>
+				
+				<when test='searchType =="u_grade"'>
+					where u_grade like '%'||#{keyword}||'%'
+				</when>
+			</choose>
+		</if>	
+	</sql>
+	
+	<!-- フェージング -->
+	<select id="selectUserPaging" resultType="JmMemberVo">
+		select *
+		from(select rownum rnum,a.*
+		from(select * from tbl_user
+		<include refid="searchUser"></include>
+		order by u_info desc)a)
+		where rnum between #{startRow} and #{endRow}	
+	</select>	
+	
+	<!-- 投稿数の照会 -->
+	<select id="selectUserCount" resultType="int">
+		select count(*) from tbl_user
+		<include refid="searchUser"></include>	
+	</select>
+	
+	<!-- 個人情報修正フォーム -->
+	<select id="selectUserById" resultType="JmMemberVo">
+		select * from tbl_user where u_id= #{u_id}
+	</select>
+	
+	<!-- 個人情報修正実行 -->
+	<update id="updateUserById">
+		update tbl_user set
+		u_pw = #{u_pw},
+		u_email = #{u_email},
+		u_address = #{u_address},
+		u_phone = #{u_phone}
+		where u_id = #{u_id}	
+	</update>
+	
+</mapper>

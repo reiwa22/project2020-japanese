@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="mappers.intro-mapper">
+
+	<!-- シーケンス値を得る -->
+		<select id="getNextVal" resultType="int">
+			select seq_intro.nextval from dual
+		</select>
+		
+	<!-- イメージ名を入れる -->
+		<insert id="insertIntroAttach">
+			insert into tbl_intro_attach(i_files,i_filesinfo)
+			values (#{i_files}, #{i_filesinfo})
+		</insert>	
+		
+	<!--  紹介掲示板リスト照会 -->
+		<select id="selectIntroList" resultType="JmIntroVo">
+			select * from tbl_intro order by i_info desc
+		</select>
+	
+	<!--  紹介掲示板info照会 -->	
+		<select id="selectIntroInfo" resultType="JmIntroVo">
+			select * from tbl_intro
+			where i_info = #{r_info}
+		</select>
+		
+	<!-- 紹介掲示板infoの写真を全て読み込む -->	
+		<select id="selectIntroInfoImage" resultType="string">
+			select i_files from tbl_intro_attach
+			where i_filesinfo = #{i_filesinfo}
+		</select>
+		
+	<!-- 紹介掲示板への書き込み -->
+		<insert id="insertIntro">
+			insert into tbl_intro(i_info,i_id,i_subject,i_contents,i_file,i_contry,i_time)
+			values (#{i_info},#{i_id},#{i_subject},#{i_contents},#{i_file},#{i_contry},sysdate)
+		</insert>
+		
+	<!-- 紹介掲示板アップデート -->
+		<update id="updateIntro">
+			update tbl_intro set
+				i_subject = #{i_subject},
+				i_contents = #{i_contents},
+				i_file = #{i_file},
+				i_contry = #{i_contry}
+			where i_info = #{i_info}
+		</update>
+		
+	<!-- 紹介掲示板削除機能 -->
+		<delete id="deleteIntro">
+			delete from tbl_intro
+			where i_info = #{i_info}
+		</delete>	
+	
+	<!-- 検索 -->
+		<sql id="search">
+			<if test="searchType !=null">
+				<choose>
+					<when test='searchType =="i_subject"'>
+						where i_subject like '%' || #{keyword} || '%'
+					</when>
+					<when test='searchType =="i_contry"'>
+						where i_contry like '%' || #{keyword} || '%'
+					</when>
+				</choose>
+			</if>
+		</sql>
+	
+	<!-- フェージング -->
+		<select id="selectPaging" resultType="JmIntroVo">
+			select *
+			from(select rownum rnum,a.*
+			from(select * from tbl_intro
+			<include refid="search"></include>
+			order by i_info desc)a)
+			where rnum between #{startRow} and #{endRow}
+		</select>
+	
+	<!-- 投稿数の照会 -->
+		<select id="selectCount" resultType="int">
+			select count(*) from tbl_intro
+			<include refid="search"></include>
+		</select>
+	
+	<!-- アクセス数増加 -->
+		<update id="updateViewCount">
+			update tbl_intro set
+			i_viewcnt = i_viewcnt+1
+			where i_info = #{i_info}
+		</update>
+
+</mapper>

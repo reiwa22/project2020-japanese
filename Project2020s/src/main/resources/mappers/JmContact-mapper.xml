@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="mappers.contact-mapper">
+
+	<!-- Q&A掲示板リスト照会 -->
+	<select id="selectContactList" resultType="JmContactVo">
+		select * from tbl_contact order by c_originnum desc,c_groupold asc
+	</select>
+	
+	<!-- Q&A掲示板info照会 -->
+	<select id="selectContactInfo" resultType="JmContactVo">
+		select * from tbl_contact
+		where c_info = #{c_info}
+	</select>
+	
+	<!-- Q&A 掲示板の書き込み -->
+	<insert id="insertContact">
+		insert into tbl_contact(c_info,c_id,c_subject,c_contents,c_time,c_originnum)
+		values (seq_contact.nextval, #{c_id},#{c_subject},#{c_contents},sysdate,(select nvl(max(c_originnum),0)from tbl_contact)+1)
+	</insert>
+	
+	<!-- Q&A掲示板アップデート -->
+		<update id="updateContact">
+			update tbl_contact set
+				c_subject = #{c_subject},
+				c_contents = #{c_contents}
+			where c_info = #{c_info}
+		</update>
+		
+	<!-- 検索 -->
+	<sql id="search">
+		<if test="searchType !=null">
+			<choose>
+				<when test='searchType =="c_subject"'>
+					where c_subject like '%' || #{keyword} || '%'
+				</when>
+				<when test='searchType =="c_id"'>
+					where c_id like '%' || #{keyword} ||'%'
+				</when>
+			</choose>
+		</if>
+	</sql>
+	
+	<!-- フェージング -->
+	<select id="selectPaging" resultType="JmContactVo">
+		select *
+		from(select rownum rnum,a.*
+		from(select * from tbl_contact
+		<include refid="search"></include>
+		order by c_originnum desc,c_groupold asc)a)
+		where rnum between #{startRow} and #{endRow}
+	</select>	
+	
+	<!-- 投稿数の照会 -->
+	<select id="selectCount" resultType="int">
+		select count(*) from tbl_contact
+		<include refid="search"></include>
+	</select>
+	
+	<!-- アクセス数増加 -->
+	<update id="updateViewCount">
+		update tbl_contact set
+		c_viewcnt = c_viewcnt+1
+		where c_info = #{c_info}
+	</update>
+	
+</mapper>
